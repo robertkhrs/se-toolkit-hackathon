@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+aiogram
+openai
+sqlalchemy
+asyncpg
+python-dotenv
+httpx
+greenlet
