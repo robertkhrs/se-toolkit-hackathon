@@ -3,7 +3,7 @@ import os
 import httpx
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv
@@ -27,7 +27,10 @@ main_keyboard = ReplyKeyboardMarkup(
             KeyboardButton(text="🎭 Start/Reset"),
             KeyboardButton(text="🌐 Change Language"),
         ],
-        [KeyboardButton(text="🧠 Quiz")],
+        [
+            KeyboardButton(text="🧠 Quiz"),
+            KeyboardButton(text="💻 Web Version"),
+        ],
     ],
     resize_keyboard=True,
     persistent=True,
@@ -40,6 +43,7 @@ def get_button_action(text: str) -> str | None:
         "🎭 Start/Reset": "start_reset",
         "🌐 Change Language": "change_language",
         "🧠 Quiz": "quiz",
+        "💻 Web Version": "web_version",
     }
     return button_map.get(text.strip())
 
@@ -149,6 +153,17 @@ async def handle_message(message: types.Message, state: FSMContext):
 
     if action == "quiz":
         await quiz_cmd(message)
+        return
+
+    if action == "web_version":
+        web_kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Open Web Tutor", url="http://85.192.37.172:8000/")]
+        ])
+        await message.answer(
+            "Check out our Web App! 🚀\n"
+            "It offers a clean chat interface and a full history of your language mistakes to help you learn faster.",
+            reply_markup=web_kb,
+        )
         return
 
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")

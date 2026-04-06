@@ -1,11 +1,18 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from database import init_db, async_session, Message, Vocabulary
 from agent import get_agent_response
 from sqlalchemy import select
-from sqlalchemy.sql.expression import func
+import os
 
 app = FastAPI()
+
+@app.get("/")
+async def root():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, "index.html")
+    return FileResponse(file_path)
 
 class ChatRequest(BaseModel):
     user_id: int
@@ -44,12 +51,11 @@ async def chat_endpoint(req: ChatRequest):
 @app.get("/quiz/{user_id}")
 async def get_quiz(user_id: int):
     async with async_session() as session:
-        # Достаем 3 случайных слова конкретного юзера
-        stmt = select(Vocabulary).where(Vocabulary.user_id == user_id).order_by(func.random()).limit(3)
+        stmt = select(Vocabulary).where(Vocabulary.user_id == user_id)
         result = await session.execute(stmt)
         words = result.scalars().all()
-        
+
         if not words:
             return {"words": []}
-            
+
         return {"words": [{"word": w.word, "translation": w.translation} for w in words]}

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinguaSim</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --white: #ffffff;
+            --gray-100: #f9fafb;
+            --gray-200: #e5e7eb;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --user-msg: #4f46e5;
+            --bot-msg: #ffffff;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--gray-900);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--white);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .language-select {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            background: var(--white);
+            cursor: pointer;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: var(--user-msg);
+            color: var(--white);
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background: var(--bot-msg);
+            color: var(--gray-700);
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        .message.correction {
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-area {
+            background: var(--white);
+            padding: 1rem;
+            box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .input-area input {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--gray-200);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-area input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
+        .quiz-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .quiz-modal.active {
+            display: flex;
+        }
+
+        .quiz-content {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            max-width: 90%;
+            width: 400px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .quiz-content h2 {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .quiz-words {
+            list-style: none;
+            margin-bottom: 1rem;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .quiz-words li {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .quiz-words li:last-child {
+            border-bottom: none;
+        }
+
+        .quiz-close {
+            width: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--gray-500);
+            padding: 0.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header h1 {
+                text-align: center;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            .input-area input {
+                min-width: auto;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎭 LinguaSim</h1>
+        <select id="language" class="language-select">
+            <option value="English">English</option>
+            <option value="Italian">Italian</option>
+            <option value="Spanish">Spanish</option>
+            <option value="French">French</option>
+            <option value="German">German</option>
+            <option value="Portuguese">Portuguese</option>
+            <option value="Japanese">Japanese</option>
+            <option value="Korean">Korean</option>
+            <option value="Chinese">Chinese</option>
+            <option value="Russian">Russian</option>
+        </select>
+    </div>
+
+    <div id="chat" class="chat-container"></div>
+
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+        <button id="sendBtn" class="btn btn-primary">Send</button>
+        <button id="quizBtn" class="btn btn-secondary">📝 Quiz</button>
+    </div>
+
+    <div id="quizModal" class="quiz-modal">
+        <div class="quiz-content">
+            <h2>Vocabulary Quiz</h2>
+            <ul id="quizWords" class="quiz-words"></ul>
+            <button id="closeQuizBtn" class="quiz-close btn btn-secondary">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const quizBtn = document.getElementById('quizBtn');
+        const quizModal = document.getElementById('quizModal');
+        const quizWords = document.getElementById('quizWords');
+        const closeQuizBtn = document.getElementById('closeQuizBtn');
+        const languageSelect = document.getElementById('language');
+
+        const USER_ID = 1;
+
+        function appendMessage(text, type, isCorrection = false) {
+            const msg = document.createElement('div');
+            msg.className = `message ${type}${isCorrection ? ' correction' : ''}`;
+            msg.textContent = text;
+            chat.appendChild(msg);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            appendMessage(text, 'user');
+            messageInput.value = '';
+
+            const loading = document.createElement('div');
+            loading.className = 'loading';
+            loading.textContent = 'Thinking...';
+            chat.appendChild(loading);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: USER_ID,
+                        text: text,
+                        language: languageSelect.value
+                    })
+                });
+
+                chat.removeChild(loading);
+                const data = await response.json();
+
+                if (data.correction) {
+                    appendMessage(data.correction, 'bot', true);
+                }
+                appendMessage(data.reply, 'bot');
+            } catch (err) {
+                chat.removeChild(loading);
+                appendMessage('Error: Could not connect to server.', 'bot');
+            }
+        }
+
+        async function fetchQuiz() {
+            quizWords.innerHTML = '<li class="loading">Loading...</li>';
+            quizModal.classList.add('active');
+
+            try {
+                const response = await fetch(`/quiz/${USER_ID}`);
+                const data = await response.json();
+
+                if (data.words.length === 0) {
+                    quizWords.innerHTML = '<li>No vocabulary yet. Start chatting!</li>';
+                    return;
+                }
+
+                quizWords.innerHTML = '';
+                data.words.forEach(w => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${w.word}</strong><span>${w.translation}</span>`;
+                    quizWords.appendChild(li);
+                });
+            } catch (err) {
+                quizWords.innerHTML = '<li>Error loading quiz.</li>';
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        quizBtn.addEventListener('click', fetchQuiz);
+        closeQuizBtn.addEventListener('click', () => quizModal.classList.remove('active'));
+        quizModal.addEventListener('click', (e) => {
+            if (e.target === quizModal) quizModal.classList.remove('active');
+        });
+    </script>
+</body>
+</html>
