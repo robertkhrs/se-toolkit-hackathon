@@ -10,9 +10,9 @@ client = AsyncOpenAI(
     base_url="https://api.groq.com/openai/v1" 
 )
 
-def get_system_prompt(language: str) -> str:
+def get_system_prompt(language: str, topic: str) -> str:
     return f"""
-You are a language tutor for roleplay. Scenario: 'Ordering food in a restaurant'. You are the waiter.
+You are a language tutor for roleplay. Scenario: '{topic}'.
 Target language: {language}.
 
 RULES:
@@ -38,12 +38,12 @@ Your correction MUST be: "Вы написали 'смитану', но прав�
 Your new_words should include: {{"word": "сметана", "translation": "сметана"}}
 """
 
-async def get_agent_response(user_text: str, language: str) -> dict:
+async def get_agent_response(user_text: str, language: str, topic: str = "Ordering food in a restaurant") -> dict:
     response = await client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         response_format={ "type": "json_object" },
         messages=[
-            {"role": "system", "content": get_system_prompt(language)}, # <--- Передаем язык сюда
+            {"role": "system", "content": get_system_prompt(language, topic)},
             {"role": "user", "content": user_text}
         ]
     )

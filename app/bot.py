@@ -15,10 +15,12 @@ dp = Dispatcher()
 
 class LanguageForm(StatesGroup):
     waiting_for_language = State()
+    waiting_for_topic = State()
 
 API_URL = "http://api:8000/chat"
 
 user_languages = {}
+user_topics = {}
 
 # Persistent reply keyboard
 main_keyboard = ReplyKeyboardMarkup(
@@ -31,6 +33,7 @@ main_keyboard = ReplyKeyboardMarkup(
             KeyboardButton(text="🧠 Quiz"),
             KeyboardButton(text="💻 Web Version"),
         ],
+        [KeyboardButton(text="💬 Change Topic")],
     ],
     resize_keyboard=True,
     persistent=True,
@@ -44,6 +47,7 @@ def get_button_action(text: str) -> str | None:
         "🌐 Change Language": "change_language",
         "🧠 Quiz": "quiz",
         "💻 Web Version": "web_version",
+        "💬 Change Topic": "change_topic",
     }
     return button_map.get(text.strip())
 
@@ -51,6 +55,7 @@ def get_button_action(text: str) -> str | None:
 @dp.message(Command("start"))
 async def start_cmd(message: types.Message):
     user_languages.pop(message.from_user.id, None)
+    user_topics.pop(message.from_user.id, None)
     welcome_text = (
         "👋 Welcome! I'm your language learning assistant.\n\n"
         "I'll help you practice conversations, correct your mistakes, "
@@ -127,6 +132,18 @@ async def process_language_change(message: types.Message, state: FSMContext):
     await state.clear()
 
 
+@dp.message(LanguageForm.waiting_for_topic)
+async def process_topic_change(message: types.Message, state: FSMContext):
+    new_topic = message.text.strip()
+    user_topics[message.from_user.id] = new_topic
+    await message.answer(
+        f"✅ Topic changed to **{new_topic}**. Let's continue our roleplay!",
+        parse_mode="Markdown",
+        reply_markup=main_keyboard,
+    )
+    await state.clear()
+
+
 @dp.message()
 async def handle_message(message: types.Message, state: FSMContext):
     # Skip if the user is in the middle of a state machine flow
@@ -166,9 +183,22 @@ async def handle_message(message: types.Message, state: FSMContext):
         )
         return
 
+    if action == "change_topic":
+        await message.answer(
+            "Please enter a new topic or scenario for our roleplay.\n\n"
+            "💡 *Tip: Be as specific as possible! The more details you provide about the setting, "
+            "your role, and the problem, the better the AI will understand you.*\n"
+            "_Instead of just 'Airport', try: 'At the airport passport control, and the officer says my visa is expired.'_",
+            parse_mode="Markdown",
+            reply_markup=main_keyboard,
+        )
+        await state.set_state(LanguageForm.waiting_for_topic)
+        return
+
     await message.bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
     current_lang = user_languages.get(message.from_user.id, "Italian")
+    current_topic = user_topics.get(message.from_user.id, "Ordering food in a restaurant")
 
     async with httpx.AsyncClient() as client:
         try:
@@ -176,6 +206,7 @@ async def handle_message(message: types.Message, state: FSMContext):
                 "user_id": message.from_user.id,
                 "text": message.text,
                 "language": current_lang,
+                "topic": current_topic,
             }
             response = await client.post(API_URL, json=payload)
             response.raise_for_status()

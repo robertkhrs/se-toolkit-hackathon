@@ -18,6 +18,7 @@ class ChatRequest(BaseModel):
     user_id: int
     text: str
     language: str = "Italian"
+    topic: str = "Ordering food in a restaurant"
 
 @app.on_event("startup")
 async def on_startup():
@@ -25,7 +26,7 @@ async def on_startup():
 
 @app.post("/chat")
 async def chat_endpoint(req: ChatRequest):
-    agent_data = await get_agent_response(req.text, req.language)
+    agent_data = await get_agent_response(req.text, req.language, req.topic)
     
     async with async_session() as session:
         # Сохраняем сообщения (как раньше)
