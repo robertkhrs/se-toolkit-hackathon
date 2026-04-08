@@ -69,3 +69,13 @@ async def get_quiz(user_id: int):
             return {"words": []}
 
         return {"words": [{"word": w.word, "translation": w.translation} for w in words]}
+
+@app.get("/history/{user_id}")
+async def get_history(user_id: int):
+    async with async_session() as session:
+        stmt = select(Message).where(Message.user_id == user_id).order_by(Message.id.desc()).limit(15)
+        result = await session.execute(stmt)
+        recent_messages = result.scalars().all()
+        recent_messages.reverse()  # oldest to newest
+
+        return {"messages": [{"role": msg.role, "content": msg.content} for msg in recent_messages]}

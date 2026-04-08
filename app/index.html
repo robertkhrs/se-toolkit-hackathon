@@ -322,6 +322,7 @@
         const quizWords = document.getElementById('quizWords');
         const closeQuizBtn = document.getElementById('closeQuizBtn');
         const languageSelect = document.getElementById('language');
+        const topicInput = document.getElementById('topicInput');
 
         const USER_ID = 1;
 
@@ -331,6 +332,20 @@
             msg.textContent = text;
             chat.appendChild(msg);
             chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch(`/history/${USER_ID}`);
+                const data = await response.json();
+
+                data.messages.forEach(msg => {
+                    const type = msg.role === 'assistant' ? 'bot' : 'user';
+                    appendMessage(msg.content, type);
+                });
+            } catch (err) {
+                console.error('Failed to load history:', err);
+            }
         }
 
         async function sendMessage() {
@@ -404,6 +419,8 @@
         quizModal.addEventListener('click', (e) => {
             if (e.target === quizModal) quizModal.classList.remove('active');
         });
+
+        window.addEventListener('DOMContentLoaded', loadHistory);
     </script>
 </body>
 </html>
