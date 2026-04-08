@@ -26,8 +26,17 @@ async def on_startup():
 
 @app.post("/chat")
 async def chat_endpoint(req: ChatRequest):
-    agent_data = await get_agent_response(req.text, req.language, req.topic)
-    
+    # Fetch last 10 messages for conversation history
+    async with async_session() as session:
+        stmt = select(Message).where(Message.user_id == req.user_id).order_by(Message.id.desc()).limit(10)
+        result = await session.execute(stmt)
+        recent_messages = result.scalars().all()
+        recent_messages.reverse()  # oldest to newest
+
+    history = [{"role": msg.role, "content": msg.content} for msg in recent_messages]
+
+    agent_data = await get_agent_response(req.text, req.language, req.topic, history)
+
     async with async_session() as session:
         # Сохраняем сообщения (как раньше)
         user_msg = Message(user_id=req.user_id, role="user", content=req.text)

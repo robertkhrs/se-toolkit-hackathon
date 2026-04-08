@@ -38,14 +38,18 @@ Your correction MUST be: "Вы написали 'смитану', но прав�
 Your new_words should include: {{"word": "сметана", "translation": "сметана"}}
 """
 
-async def get_agent_response(user_text: str, language: str, topic: str = "Ordering food in a restaurant") -> dict:
+async def get_agent_response(user_text: str, language: str, topic: str = "Ordering food in a restaurant", history: list = None) -> dict:
+    messages = [
+        {"role": "system", "content": get_system_prompt(language, topic)},
+    ]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": user_text})
+
     response = await client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         response_format={ "type": "json_object" },
-        messages=[
-            {"role": "system", "content": get_system_prompt(language, topic)},
-            {"role": "user", "content": user_text}
-        ]
+        messages=messages
     )
     result = response.choices[0].message.content
     return json.loads(result)
